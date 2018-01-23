@@ -8,6 +8,7 @@ import org.tio.core.exception.LengthOverflowException;
 import org.tio.core.utils.ByteBufferUtils;
 
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -35,6 +36,20 @@ public class HttpRequestDecoder {
     public static final int MAX_LENGTH_OF_HEADERLINE = 2048;
 
     public static HttpRequest decode(ByteBuffer buffer, ChannelContext channelContext) throws AioDecodeException{
+
+        /**
+         * 测试打印
+         * */
+        byte[] b = new byte[buffer.remaining()];
+        buffer.get(b,0,b.length);
+        try {
+            String info = new String(b, "utf-8");
+            System.out.println(info);
+        }catch (UnsupportedEncodingException e){
+
+        }
+        buffer = ByteBuffer.wrap(b);
+
         int initPosition = buffer.position();
         int readableLength = buffer.limit() - initPosition;
         //当前步骤，第一行

@@ -1,12 +1,16 @@
 package server.util;
 
+import com.xiaoleilu.hutool.io.FileUtil;
 import com.xiaoleilu.hutool.util.ClassUtil;
 import common.*;
+import jodd.io.FileNameUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.tio.utils.json.Json;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
 
@@ -161,7 +165,48 @@ public class Resps {
         HttpResponse ret = string(request, bodyString, charset, MimeType.TEXT_PLAIN_TXT.getType() + ";charset=" + charset);
         return ret;
     }
+
     public static HttpResponse txt(HttpRequest request, String bodyString) {
         return txt(request, bodyString, request.getHttpConfig().getCharset());
+    }
+
+    public static HttpResponse bytes(HttpRequest request,byte[] bodyBytes,String extension){
+        String contentType = null;
+        if (StringUtils.isNoneBlank(extension)){
+            MimeType mimeType = MimeType.fromExtension(extension);
+            if (mimeType != null){
+                contentType = mimeType.getType();
+            }else{
+                contentType = "application/octet-stream";
+            }
+        }
+        return bytesWithContentType(request,bodyBytes,contentType);
+    }
+
+    public static HttpResponse file(HttpRequest request,String path,HttpConfig httpConfig) throws IOException{
+        File pageRoot = httpConfig.getPageRoot();
+        if (pageRoot != null){
+            File file = new File(pageRoot + path);
+            if (!file.exists()){
+                return resp404(request,request.getRequestLine(),httpConfig);
+            }
+            return file(request,file);
+        }else{
+            return resp404(request,request.getRequestLine(),httpConfig);
+        }
+    }
+    public static HttpResponse file(HttpRequest request, File fileOnServer) throws IOException {
+        Date lastModified = FileUtil.lastModifiedTime(fileOnServer);
+        HttpResponse ret = try304(request, lastModified.getTime());
+        if (ret != null) {
+            return ret;
+        }
+
+        byte[] bodyBytes = FileUtil.readBytes(fileOnServer);
+        String filename = fileOnServer.getName();
+        String extension = FileNameUtil.getExtension(filename);
+        ret = bytes(request, bodyBytes, extension);
+        ret.addHeader(HttpConst.ResponseHeaderKey.Last_Modified, lastModified.getTime() + "");
+        return ret;
     }
 }

@@ -2,7 +2,7 @@ package server.mvc;
 
 import com.thoughtworks.paranamer.BytecodeReadingParanamer;
 import com.thoughtworks.paranamer.Paranamer;
-import com.xiaoleilu.hutool.io.FileUtil;
+import jodd.io.FileUtil;
 import com.xiaoleilu.hutool.util.ArrayUtil;
 import common.HttpRequest;
 import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
@@ -170,12 +170,16 @@ public class Routes {
             processVariablePath();
             String variablePathMethodstrMapStr = Json.toFormatedJson(variablePathMethodstrMap);
 
-            FileUtil.writeString("/tio_path_class.json", pathClassMapStr, "utf-8");
-            FileUtil.writeString("/tio_path_method.json", pathMethodstrMapStr, "utf-8");
-            FileUtil.writeString("/tio_variablepath_method.json", variablePathMethodstrMapStr, "utf-8");
+            try {
+                FileUtil.writeString("/tio_path_class.json", pathClassMapStr, "utf-8");
+                FileUtil.writeString("/tio_path_method.json", pathMethodstrMapStr, "utf-8");
+                FileUtil.writeString("/tio_variablepath_method.json", variablePathMethodstrMapStr, "utf-8");
 
-            if (errorStr.length() > 0) {
-                FileUtil.writeString("/tio_mvc_error.txt", errorStr.toString(), "utf-8");
+                if (errorStr.length() > 0) {
+                    FileUtil.writeString("/tio_mvc_error.txt", errorStr.toString(), "utf-8");
+                }
+            }catch (IOException e){
+
             }
 
         }

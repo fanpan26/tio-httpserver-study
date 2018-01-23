@@ -103,4 +103,10 @@ public class TokenAccessStat  implements Serializable{
         double perSecond = ((double)count / (double)duration) * (double)1000;
         return perSecond;
     }
+    public void setLastAccessTime(long lastAccessTime) {
+        this.lastAccessTime = lastAccessTime;
+    }
+    public long getLastAccessTime() {
+        return lastAccessTime;
+    }
 }

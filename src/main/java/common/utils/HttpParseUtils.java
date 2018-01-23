@@ -1,6 +1,7 @@
 package common.utils;
 
 import common.KeyValue;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -136,7 +137,8 @@ public class HttpParseUtils {
             keyValue.setKey(line);
             return keyValue;
         }
-        String name = line.substring(0, p).trim();
+        //这里要注意转化成小写
+        String name = StringUtils.lowerCase(line.substring(0, p).trim());
         String value = line.substring(p + 1).trim();
 
         keyValue.setKey(name);
