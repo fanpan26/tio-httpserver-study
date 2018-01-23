@@ -18,4 +18,9 @@ public class TestController {
     public HttpResponse test(HttpRequest request){
         return Resps.json(request,"hello,this is tio-http-server test");
     }
+
+    @RequestPath(value = "/post")
+    public HttpResponse testPost(HttpRequest request){
+        return Resps.json(request,"test post");
+    }
 }

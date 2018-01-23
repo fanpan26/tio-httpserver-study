@@ -24,7 +24,7 @@ public class HttpServerInit {
     public static void init() throws Exception {
         long start = SystemTimer.currentTimeMillis();
 
-        String pageRoot = "classpath:page";
+        String pageRoot = "classpath:";
 
         String[] scanPackages = new String[] { HttpServerDemoStarter.class.getPackage().getName() };//tio mvc需要扫描的根目录包
 

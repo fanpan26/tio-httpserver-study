@@ -35,25 +35,30 @@ public class HttpRequestDecoder {
      * */
     public static final int MAX_LENGTH_OF_HEADERLINE = 2048;
 
+    private static void log(String msg){
+        System.out.println(msg);
+    }
+
     public static HttpRequest decode(ByteBuffer buffer, ChannelContext channelContext) throws AioDecodeException{
 
         /**
-         * 测试打印
+         * 测试打印，这一段在源码中并不存在，是为了打印出请求的内容
          * */
-        byte[] b = new byte[buffer.remaining()];
-        buffer.get(b,0,b.length);
-        try {
-            String info = new String(b, "utf-8");
-            System.out.println(info);
-        }catch (UnsupportedEncodingException e){
-
-        }
-        buffer = ByteBuffer.wrap(b);
-
+//        byte[] b = new byte[buffer.remaining()];
+//        buffer.get(b,0,b.length);
+//        try {
+//            String info = new String(b, "utf-8");
+//            System.out.println(info);
+//        }catch (UnsupportedEncodingException e){
+//
+//        }
+//        buffer = ByteBuffer.wrap(b);
+        //源代码开始
         int initPosition = buffer.position();
         int readableLength = buffer.limit() - initPosition;
         //当前步骤，第一行
         Step step = Step.firstline;
+        //用于保存header内容
         Map<String,String> headers = new HashMap<>();
         int contentLength = 0;
         byte[] bodyBytes = null;
@@ -61,11 +66,15 @@ public class HttpRequestDecoder {
         StringBuilder headerString = new StringBuilder(512);
         RequestLine firstLine = null;
 
-        //position < limit
+        /**
+         * position < limit
+         * 循环读取每行的内容进行解析
+         * */
         while(buffer.hasRemaining()){
             String line;
             try{
                 line = ByteBufferUtils.readLine(buffer,null,MAX_LENGTH_OF_HEADERLINE);
+                log("开始解析："+line);
             }catch (LengthOverflowException e){
                 throw new AioDecodeException(e);
             }
@@ -82,6 +91,7 @@ public class HttpRequestDecoder {
             headerString.append(line).append("\r\n");
             //line为空，头部信息解析结束
             if("".equals(line)){
+                log("开始解析请求体");
                 //从 Content-Length:167 读取请求体的长度
                 String contentLengthStr = headers.get(HttpConst.RequestHeaderKey.Content_Length);
                 if(StringUtils.isBlank(contentLengthStr)){
@@ -102,13 +112,14 @@ public class HttpRequestDecoder {
                     return null;
                 }
             }else{
-
               if(step == Step.firstline){
+                  log("开始解析requestLine");
                   //解析第一行
                   firstLine = parseRequestLine(line);
                   step = Step.header;
               }else if(step == Step.header){
                   //解析头部
+                  log("开始解析头部信息："+line);
                   KeyValue keyValue = HttpParseUtils.parseHeaderLine(line);
                   headers.put(keyValue.getKey(),keyValue.getValue());
               }
@@ -140,8 +151,10 @@ public class HttpRequestDecoder {
             bodyBytes = new byte[contentLength];
             buffer.get(bodyBytes);
             //解析消息体
+            log("开始解析消息体");
             parseBody(request,firstLine,bodyBytes,channelContext);
         }
+        log("解析结束");
         return request;
     }
 
@@ -150,15 +163,20 @@ public class HttpRequestDecoder {
      * */
     public static RequestLine parseRequestLine(String line) throws AioDecodeException{
         try {
+            //GET /test/hello HTTP/1.1
             int index1 = line.indexOf(' ');
-            //得到请求方法
+            //得到请求方法 GET
             String _method = StringUtils.upperCase(line.substring(0,index1));
+            //转化为枚举的Method
             Method method = Method.from(_method);
 
+            //截取路径  /test/hello
             int index2 = line.indexOf(' ',index1 + 1);
+            // /test/hello
             String pathAndQueryStr = line.substring(index1 + 1,index2);
             String path = null;
             String queryStr = null;
+            //是否带有?参数
             int indexOfQuestionMark = pathAndQueryStr.indexOf("?");
             //URL上是否带参数，例如 ?user=123456
             if(indexOfQuestionMark != -1){
@@ -172,7 +190,9 @@ public class HttpRequestDecoder {
             //HTTP/1.1
             String protocolVersion = line.substring(index2 + 1);
             String[] pv = StringUtils.split(protocolVersion,"/");
+            //HTTP
             String protocol = pv[0];
+            //1.1
             String version = pv[1];
 
             RequestLine requestLine = new RequestLine();

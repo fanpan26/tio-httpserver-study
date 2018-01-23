@@ -1,7 +1,9 @@
 package server;
 
+import com.xiaoleilu.hutool.util.StrUtil;
 import common.*;
 import common.handler.HttpRequestHandler;
+import org.apache.commons.compress.utils.ByteUtils;
 import org.tio.core.Aio;
 import org.tio.core.ChannelContext;
 import org.tio.core.GroupContext;
@@ -62,6 +64,8 @@ public class HttpServerAioHandler implements ServerAioHandler{
         }
         HttpResponse httpResponse = requestHandler.handler(request);
         if (httpResponse != null){
+           //String content = StrUtil.str(httpResponse.getBody(),httpResponse.getCharset());
+
             Aio.send(channelContext,httpResponse);
         }else{
             Aio.remove(channelContext,"handler return null");
