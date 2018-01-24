@@ -30,7 +30,7 @@ public class HttpServerInit {
 
 
 
-        httpConfig = new HttpConfig(8080, null, null, null);
+        httpConfig = new HttpConfig(8080, null, "/tio", ".php");
         httpConfig.setPageRoot(pageRoot);
 
 

@@ -41,7 +41,7 @@ public class HttpResponseEncoder {
 
         HttpResponseStatus httpResponseStatus = httpResponse.getStatus();
 
-        str.append("HTTP/1.1").append(httpResponseStatus.getStatus()).append(" ").append(httpResponseStatus.getDescription()).append("\r\n");
+        str.append("HTTP/1.1").append(" ").append(httpResponseStatus.getStatus()).append(" ").append(httpResponseStatus.getDescription()).append("\r\n");
         Map<String, String> headers = httpResponse.getHeaders();
         if(headers != null && headers.size() > 0){
             headers.put(HttpConst.ResponseHeaderKey.Content_Length,bodyLength+"");

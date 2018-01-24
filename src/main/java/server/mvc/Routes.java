@@ -59,6 +59,9 @@ public class Routes {
      * */
     public Map<String, Method> pathMethodMap = new TreeMap<>();
 
+    //私人定制
+    public Map<String,String> pathAllowMethodMap = new TreeMap<>();
+
     /**
      * Method路径映射
      * 只是用于打印日志
@@ -94,25 +97,38 @@ public class Routes {
 
     StringBuilder errorStr = new StringBuilder();
 
+    /**
+     * 构造方法传入要扫描的包
+     * */
     public Routes(String[] scanPackages){
         if(scanPackages != null) {
             final FastClasspathScanner fastClasspathScanner = new FastClasspathScanner(scanPackages);
 
+            //扫描带有RequestPath注解的类。
             fastClasspathScanner.matchClassesWithAnnotation(RequestPath.class, new ClassAnnotationMatchProcessor() {
+                //匹配到之后执行的方法
                 @Override
                 public void processMatch(Class<?> classWithAnnotation) {
+                    //这里classWithAnnotation就是 TestController
                     try {
+                        //通过反射新创建一个TestController的实例
                         Object bean = classWithAnnotation.newInstance();
+                        //获取到注解对象
                         RequestPath mapping = classWithAnnotation.getAnnotation(RequestPath.class);
+                        //拿到 value 值 即：/test
                         String beanPath = mapping.value();
-
+                        //暂时忽略，源代码中注释掉了，返回beanPath，即无处理
                         beanPath = formateBeanPath(beanPath);
+                        //判断有没有重复定义的路由
                         Object obj = pathBeanMap.get(beanPath);
                         if (obj != null) {
                             errorStr.append("mapping[" + beanPath + "] already exists in class [" + obj.getClass().getName() + "]\r\n\r\n");
                         } else {
+                            //将 /test 和 TestController 对象的实例存储到 TreeMap中
                             pathBeanMap.put(beanPath, bean);
+                            //存储 /test class  以便后续使用
                             pathClassMap.put(beanPath, classWithAnnotation);
+                            //存储 class /test 以便后续使用
                             classPathMap.put(classWithAnnotation, beanPath);
                         }
                     } catch (Throwable e) {
@@ -120,12 +136,17 @@ public class Routes {
                     }
                 }
             });
+            //扫描带有RequestPath注解的方法
             fastClasspathScanner.matchClassesWithMethodAnnotation(RequestPath.class, new MethodAnnotationMatchProcessor() {
                 @Override
                 public void processMatch(Class<?> matchingClass, Executable matchingMethodOrConstructor) {
+                    //匹配到方法之后获取注解
                     RequestPath mapping = matchingMethodOrConstructor.getAnnotation(RequestPath.class);
+                    //得到方法名
                     String methodName = matchingMethodOrConstructor.getName();
+                    //得到路由path
                     String methodPath = mapping.value();
+                    String allow = mapping.allow();
                     methodPath = formateMethodPath(methodPath);
                     String beanPath = classPathMap.get(matchingClass);
 
@@ -136,13 +157,16 @@ public class Routes {
 
                     Object bean = pathBeanMap.get(beanPath);
                     String completeMethodPath = methodPath;
+                    //组合路径  /test + /hello
                     if (beanPath != null) {
                         completeMethodPath = beanPath + methodPath;
                     }
 
+                    //获取方法的参数类型数组
                     Class<?>[] parameterTypes = matchingMethodOrConstructor.getParameterTypes();
                     Method method;
                     try {
+                        //这儿有点小看不懂，应该就是获取方法的参数信息
                         method = matchingClass.getMethod(methodName, parameterTypes);
                         Paranamer paranamer = new BytecodeReadingParanamer();
                         String[] parameterNames = paranamer.lookupParameterNames(method, false);
@@ -151,9 +175,15 @@ public class Routes {
                             errorStr.append("mapping[" + completeMethodPath + "] already exists in method [" + checkMethod.getDeclaringClass() + "#" + checkMethod.getName() + "]\r\n\r\n");
                             return;
                         }
+                        //存储  /test/hello method
                         pathMethodMap.put(completeMethodPath, method);
+                        //存放是否允许的方法
+                        pathAllowMethodMap.put(completeMethodPath,allow);
+                        //用于打印
                         pathMethodstrMap.put(completeMethodPath, methodToStr(method, parameterNames));
+                        //存储  method  参数
                         methodParamnameMap.put(method, parameterNames);
+                        //存储 method  对应 TestController实例
                         methodBeanMap.put(method, bean);
                     } catch (Throwable e) {
 
@@ -259,9 +289,20 @@ public class Routes {
         return method.getDeclaringClass().getName() + "." + method.getName() + "(" + ArrayUtil.join(parameterNames, ",") + ")";
     }
 
+    /**
+     * 检查请求方法是否允许
+     * */
+    public  boolean checkAllowMethod(String path,HttpRequest request) {
+        String allows = pathAllowMethodMap.get(path);
+        common.Method requestMethod = request.getRequestLine().getMethod();
+        String[] allowMethods = StringUtils.split(allows, ",");
+        return ArrayUtil.contains(allowMethods,requestMethod.name());
+    }
+
     @SuppressWarnings("unused")
     public Method getMethodByPath(String path, HttpRequest request){
         Method method = pathMethodMap.get(path);
+
         if(method == null){
             String[] pathUnitsOfRequest = StringUtils.split(path,"/");
             VariablePathVo[] variablePathVos = variablePathMap.get(pathUnitsOfRequest.length);

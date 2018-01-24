@@ -19,8 +19,10 @@ public class TestController {
         return Resps.json(request,"hello,this is tio-http-server test");
     }
 
-    @RequestPath(value = "/post")
-    public HttpResponse testPost(HttpRequest request){
-        return Resps.json(request,"test post");
+    @RequestPath(value = "/post",allow = "POST")
+    public HttpResponse testPost(String name,int age){
+        return Resps.json(null,"test post");
     }
+
+
 }

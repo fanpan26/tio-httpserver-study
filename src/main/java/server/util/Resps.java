@@ -161,6 +161,12 @@ public class Resps {
         return ret;
     }
 
+    public static HttpResponse resp405(HttpRequest request) {
+        HttpResponse ret = Resps.html(request, "");
+        ret.setStatus(HttpResponseStatus.C405);
+        return ret;
+    }
+
     public static HttpResponse txt(HttpRequest request, String bodyString, String charset) {
         HttpResponse ret = string(request, bodyString, charset, MimeType.TEXT_PLAIN_TXT.getType() + ";charset=" + charset);
         return ret;

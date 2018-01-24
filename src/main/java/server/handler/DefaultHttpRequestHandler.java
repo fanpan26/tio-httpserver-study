@@ -150,6 +150,12 @@ public class DefaultHttpRequestHandler implements HttpRequestHandler {
         }
 
         HttpResponse response = null;
+        /**
+         * 获取请求到的path 例如 path 为 /tio/test/hello.php
+         * 在初始化HttpConfig的时候已经给ContextPath和suffix赋值。 httpConfig = new HttpConfig(8080, null, "/tio", ".php");
+         * 所以，如果请求路径中包含了contextPath，需要去掉，包含了后缀也需要去掉。最终得到的路径是 ：/test/hello
+         * 这一段的作用我的理解就是“障眼法”，比如我后缀写成 php，asp，aspx 等等都可以。
+         * */
         RequestLine requestLine = request.getRequestLine();
         String path = requestLine.getPath();
         if (StringUtils.isNotBlank(contextPath)) {
@@ -187,20 +193,27 @@ public class DefaultHttpRequestHandler implements HttpRequestHandler {
             }
 
             if (method != null) {
+                if (!routes.checkAllowMethod(path,request)){
+                    return Resps.resp405(request);
+                }
+                //拿到method的参数 ：request
                 String[] paramnames = routes.methodParamnameMap.get(method);
+                //拿到参数类型 ：httpRequest
                 Class<?>[] parameterTypes = method.getParameterTypes();
 
                 Object bean = routes.methodBeanMap.get(method);
                 Object obj = null;
+                //从HttpRequest对象中拿到客户端传过来的参数
                 Map<String, Object[]> params = request.getParams();
                 if (parameterTypes == null || parameterTypes.length == 0) {
+                    //如果方法没有参数，直接执行 method 方法
                     obj = method.invoke(bean);
                 } else {
                     Object[] paramValues = new Object[parameterTypes.length];
                     int i = 0;
                     for (Class<?> paramType : parameterTypes) {
                         try {
-
+                            //判断参数的类型，给参数赋值
                             if (paramType.isAssignableFrom(HttpRequest.class)) {
                                 paramValues[i] = request;
                             } else if (paramType == HttpSession.class) {
